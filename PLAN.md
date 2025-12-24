@@ -1,0 +1,214 @@
+# IM应用开发计划
+
+## 项目概述
+
+从零打造一个Web端IM工具，支持单聊、群聊、文件传输、消息已读/未读状态、消息撤回和编辑功能。
+
+## 技术栈
+
+- **前端**: React + TypeScript
+- **后端**: NestJS + TypeScript
+- **数据库**: PostgreSQL
+- **ORM**: Prisma
+- **实时通信**: WebSocket (Socket.io)
+- **文件存储**: 本地存储/MinIO
+- **认证**: JWT
+
+## 开发阶段
+
+### 阶段1：项目初始化（MVP基础）
+- [x] 制定开发计划
+- [ ] 初始化前后端项目结构
+- [ ] 配置数据库和ORM
+- [ ] 连接Git仓库
+
+### 阶段2：后端基础架构
+- [ ] 数据库设计
+- [ ] 用户认证模块（注册、登录、JWT）
+- [ ] WebSocket基础连接
+- [ ] 基础API架构
+
+### 阶段3：用户模块
+- [ ] 用户注册/登录API
+- [ ] 用户资料管理
+- [ ] 在线状态管理
+- [ ] 好友管理（添加、删除、列表）
+
+### 阶段4：单聊功能
+- [ ] 创建会话API
+- [ ] 发送/接收消息（文本、图片、文件）
+- [ ] 消息存储
+- [ ] 消息已读/未读状态
+- [ ] 消息撤回
+- [ ] 消息编辑
+- [ ] 聊天历史记录
+
+### 阶段5：群聊功能
+- [ ] 创建群聊
+- [ ] 群成员管理（添加、移除、退出）
+- [ ] 群聊消息发送/接收
+- [ ] 群聊已读状态
+- [ ] 群管理员权限
+
+### 阶段6：文件传输
+- [ ] 文件上传API
+- [ ] 文件下载API
+- [ ] 文件大小限制
+- [ ] 文件类型验证
+- [ ] 文件消息展示
+
+### 阶段7：前端UI开发
+- [ ] 登录/注册页面
+- [ ] 主界面布局
+- [ ] 会话列表
+- [ ] 聊天窗口
+- [ ] 消息输入组件
+- [ ] 文件上传组件
+- [ ] 用户资料页面
+
+### 阶段8：前后端集成
+- [ ] WebSocket连接集成
+- [ ] API调用集成
+- [ ] 状态管理集成
+- [ ] 实时消息更新
+
+### 阶段9：测试和优化
+- [ ] 单元测试
+- [ ] 集成测试
+- [ ] 性能优化
+- [ ] 安全加固
+
+## 数据库设计（初步）
+
+### 用户表 (User)
+- id: UUID (主键)
+- username: String (唯一)
+- password: String (加密)
+- nickname: String
+- avatar: String?
+- status: Enum (online, offline)
+- createdAt: DateTime
+- updatedAt: DateTime
+
+### 好友关系表 (Friendship)
+- id: UUID (主键)
+- userId: UUID (外键)
+- friendId: UUID (外键)
+- status: Enum (pending, accepted, blocked)
+- createdAt: DateTime
+
+### 会话表 (Conversation)
+- id: UUID (主键)
+- type: Enum (single, group)
+- name: String? (群聊名称)
+- avatar: String?
+- createdBy: UUID (外键)
+- createdAt: DateTime
+- updatedAt: DateTime
+
+### 会话成员表 (ConversationMember)
+- id: UUID (主键)
+- conversationId: UUID (外键)
+- userId: UUID (外键)
+- role: Enum (owner, admin, member)
+- joinedAt: DateTime
+
+### 消息表 (Message)
+- id: UUID (主键)
+- conversationId: UUID (外键)
+- senderId: UUID (外键)
+- type: Enum (text, image, file)
+- content: String (文本内容)
+- fileUrl: String? (文件URL)
+- fileName: String? (文件名)
+- fileSize: Int? (文件大小)
+- isRead: Boolean
+- isEdited: Boolean
+- editedAt: DateTime?
+- isRevoked: Boolean
+- revokedAt: DateTime?
+- createdAt: DateTime
+- updatedAt: DateTime
+
+### 消息已读记录表 (MessageRead)
+- id: UUID (主键)
+- messageId: UUID (外键)
+- userId: UUID (外键)
+- readAt: DateTime
+
+## 项目结构
+
+```
+im-app/
+├── backend/           # NestJS后端
+│   ├── src/
+│   │   ├── auth/      # 认证模块
+│   │   ├── user/      # 用户模块
+│   │   ├── chat/      # 聊天模块
+│   │   ├── file/      # 文件模块
+│   │   ├── ws/        # WebSocket模块
+│   │   └── main.ts
+│   ├── prisma/        # Prisma配置
+│   └── package.json
+├── frontend/          # React前端
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   └── App.tsx
+│   └── package.json
+└── docs/             # 文档
+    ├── PLAN.md
+    └── API.md
+```
+
+## 待确认问题
+
+1. 文件存储方式：
+   - 使用本地文件系统还是对象存储（如MinIO、阿里云OSS）？
+   - 文件大小限制建议多少？
+
+2. 消息存储策略：
+   - 是否需要消息持久化策略（如只保留最近N天的消息）？
+   - 是否需要支持消息搜索？
+
+3. 群聊权限：
+   - 是否需要不同的管理员级别？
+   - 群主是否可以转让？
+
+4. UI设计：
+   - 是否有设计稿或参考产品？
+   - 偏好的UI风格（现代简约、功能丰富等）？
+
+## 后续扩展计划（非MVP）
+
+### 阶段10：高级功能
+- [ ] 消息搜索
+- [ ] 消息引用回复
+- [ ] 表情包支持
+- [ ] 语音消息
+- [ ] @提醒功能
+
+### 阶段11：管理功能
+- [ ] 后台管理系统
+- [ ] 用户行为日志
+- [ ] 数据统计面板
+- [ ] 敏感词过滤
+
+### 阶段12：移动端适配
+- [ ] 响应式设计优化
+- [ ] PWA支持
+- [ ] 移动端手势操作
+
+## 开发进度
+
+- 当前阶段：项目初始化
+- 完成进度：5%
+- 下一步：初始化前后端项目
+
+## 备注
+
+- 每个模块完成后会提交到Git仓库
+- 文档会随着开发进度实时更新
+- 代码会遵循各自技术栈的最佳实践
