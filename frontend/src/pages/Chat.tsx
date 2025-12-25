@@ -4,11 +4,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { FileUpload } from '@/components/FileUpload';
+import { CreateConversationDialog } from '@/components/CreateConversationDialog';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Send, MoreVertical, Edit2, RotateCcw, File } from 'lucide-react';
+import { Send, MoreVertical, Edit2, RotateCcw, File, Paperclip, X } from 'lucide-react';
 import type { Message } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
+import { api } from '@/services/api';
 
 export const Chat = () => {
   const {
@@ -27,6 +30,7 @@ export const Chat = () => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showFileUpload, setShowFileUpload] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -43,6 +47,27 @@ export const Chat = () => {
 
     await sendMessage(messageText);
     setMessageText('');
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!currentConversation) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/files/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      await sendMessage('', 'file', response.data, file.name, file.size);
+      setShowFileUpload(false);
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      throw error;
+    }
   };
 
   const handleRevokeMessage = async (messageId: string) => {
@@ -77,11 +102,12 @@ export const Chat = () => {
 
   return (
     <div className="flex h-screen bg-background">
-      <Card className="w-80 border-r rounded-none">
-        <div className="p-4 border-b">
+      <Card className="w-80 border-r rounded-none flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between">
           <h2 className="font-semibold text-lg">Conversations</h2>
+          <CreateConversationDialog />
         </div>
-        <ScrollArea className="h-[calc(100vh-65px)]">
+        <ScrollArea className="flex-1 h-[calc(100vh-65px)]">
           {conversations.map((conversation) => (
             <div
               key={conversation.id}
@@ -245,7 +271,32 @@ export const Chat = () => {
             </ScrollArea>
 
             <div className="p-4 border-t bg-card">
+              {showFileUpload && (
+                <div className="mb-4">
+                  <FileUpload
+                    onUpload={handleFileUpload}
+                    maxSize={10 * 1024 * 1024}
+                    disabled={!currentConversation}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-4 right-4"
+                    onClick={() => setShowFileUpload(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowFileUpload(!showFileUpload)}
+                  disabled={!currentConversation}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
                 <Input
                   placeholder="Type a message..."
                   value={messageText}
@@ -259,8 +310,9 @@ export const Chat = () => {
                       handleSendMessage();
                     }
                   }}
+                  disabled={!currentConversation}
                 />
-                <Button onClick={handleSendMessage} disabled={!messageText.trim()}>
+                <Button onClick={handleSendMessage} disabled={!messageText.trim() || !currentConversation}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
